@@ -14,16 +14,152 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string | null
+          date_of_birth: string
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date_of_birth: string
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date_of_birth?: string
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      scan_reports: {
+        Row: {
+          created_at: string | null
+          device_id: string
+          id: string
+          report_data: Json | null
+          risk_score: number | null
+          scan_date: string | null
+          user_id: string
+          vulnerabilities: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_id: string
+          id?: string
+          report_data?: Json | null
+          risk_score?: number | null
+          scan_date?: string | null
+          user_id: string
+          vulnerabilities?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          device_id?: string
+          id?: string
+          report_data?: Json | null
+          risk_score?: number | null
+          scan_date?: string | null
+          user_id?: string
+          vulnerabilities?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scan_reports_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "scanned_devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scanned_devices: {
+        Row: {
+          created_at: string | null
+          id: string
+          ip_address: unknown
+          last_scan_date: string | null
+          name: string
+          os_version: string | null
+          risk_score: number | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ip_address: unknown
+          last_scan_date?: string | null
+          name: string
+          os_version?: string | null
+          risk_score?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          last_scan_date?: string | null
+          name?: string
+          os_version?: string | null
+          risk_score?: number | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +286,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
