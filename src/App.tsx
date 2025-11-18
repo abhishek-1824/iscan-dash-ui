@@ -11,6 +11,8 @@ import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import About from "./pages/About";
+import Architecture from "./pages/Architecture";
+import Implementation from "./pages/Implementation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +50,16 @@ const App = () => (
               <Route path="/about" element={
                 <ProtectedRoute>
                   <About />
+                </ProtectedRoute>
+              } />
+              <Route path="/architecture" element={
+                <ProtectedRoute>
+                  <Architecture />
+                </ProtectedRoute>
+              } />
+              <Route path="/implementation" element={
+                <ProtectedRoute>
+                  <Implementation />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
