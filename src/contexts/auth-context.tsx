@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
 
 interface User {
   id: string;
@@ -32,54 +34,113 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        if (session?.user) {
+          await fetchUserProfile(session.user.id);
+          setIsAuthenticated(true);
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+        setLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        await fetchUserProfile(session.user.id);
+        setIsAuthenticated(true);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchUserProfile = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (data && !error) {
+      setUser({
+        id: data.id,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        email: data.email,
+        dateOfBirth: data.date_of_birth,
+      });
+    }
+  };
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Mock Kerberos authentication
-    if (email && password) {
-      // Simulate authentication delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock user data
-      const mockUser: User = {
-        id: '1',
-        firstName: 'John',
-        lastName: 'Doe',
-        email: email,
-        dateOfBirth: '1990-01-01'
-      };
-      
-      setUser(mockUser);
-      setIsAuthenticated(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
       return true;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-    return false;
   };
 
   const register = async (userData: Omit<User, 'id'> & { password: string; confirmPassword: string }): Promise<boolean> => {
-    // Mock registration
-    if (userData.password === userData.confirmPassword) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const newUser: User = {
-        id: Math.random().toString(36).substr(2, 9),
-        firstName: userData.firstName,
-        lastName: userData.lastName,
+    try {
+      if (userData.password !== userData.confirmPassword) {
+        return false;
+      }
+
+      const { data, error } = await supabase.auth.signUp({
         email: userData.email,
-        dateOfBirth: userData.dateOfBirth
-      };
-      
-      setUser(newUser);
-      setIsAuthenticated(true);
+        password: userData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            first_name: userData.firstName,
+            last_name: userData.lastName,
+            date_of_birth: userData.dateOfBirth,
+          },
+        },
+      });
+
+      if (error) throw error;
       return true;
+    } catch (error) {
+      console.error('Registration error:', error);
+      return false;
     }
-    return false;
   };
 
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+      setIsAuthenticated(false);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
+
+  if (loading) {
+    return null; // Or a loading spinner
+  }
 
   return (
     <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout }}>
